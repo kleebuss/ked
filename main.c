@@ -5,6 +5,7 @@
 #include <SDL.h>
 #include <SDL_ttf.h>
 
+#include "SDL_events.h"
 #include "SDL_keycode.h"
 #include "la.h"
 
@@ -21,7 +22,9 @@ SDL_Color blue;
 SDL_Color red;
 SDL_Color green;
 
-char *fileData;
+#define BUFFER_CAPACITY 1024
+char buffer[BUFFER_CAPACITY];
+size_t buffer_size = 0;
 
 // check SDL return code and panic if negative.
 void scc(int code)
@@ -112,7 +115,7 @@ SDL_Texture *get_text_texture(const char *text, TTF_Font *font, SDL_Color color)
     return surface_to_texture(surface, 1);
 }
 
-void render_text(const char *text, Vec2f pos, TTF_Font *font, SDL_Color color, float scale)
+void render_text_sized(const char *text, size_t text_size, Vec2f pos, TTF_Font *font, SDL_Color color, float scale)
 {
     SDL_Texture *text_texture = get_text_texture(text, font, color);
 
@@ -127,7 +130,12 @@ void render_text(const char *text, Vec2f pos, TTF_Font *font, SDL_Color color, f
     SDL_DestroyTexture(text_texture);
 }
 
-void handle_keydown(SDL_Event event)
+void render_text(const char *text, Vec2f pos, TTF_Font *font, SDL_Color color, float scale)
+{
+    render_text_sized(text, strlen(text), pos, font, color, scale);
+}
+
+void handle_textinput(SDL_Event event)
 {
     if (event.key.repeat)
     {
@@ -135,7 +143,15 @@ void handle_keydown(SDL_Event event)
         return;
     }
 
+    size_t text_size = strlen(event.text.text);
+    const size_t free_space = BUFFER_CAPACITY - buffer_size;
 
+    if (text_size > free_space) {
+        text_size = free_space;
+    }
+
+    memcpy(buffer + buffer_size, event.text.text, text_size);
+    buffer_size += text_size;
 }
 
 int main()
@@ -148,8 +164,6 @@ int main()
     init_colors();
     TTF_Font *font = load_font("fonts/ProggyVector-Regular.ttf");
 
-    fileData = ""; 
-
     bool quit = false;
 
     while (!quit) {
@@ -159,17 +173,17 @@ int main()
                 case SDL_QUIT:
                     quit = true;
                     break;
-                case SDL_KEYDOWN:
-                    handle_keydown(event);
+                case SDL_TEXTINPUT:
+                    handle_textinput(event);
             }
         }
 
         scc(SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0));
         scc(SDL_RenderClear(renderer));
 
-        if (strlen(fileData) > 0)
+        if (strlen(buffer) > 0)
         {
-            render_text(fileData, vec2f(50.0, 50.0), font, green, 4.0f);
+            render_text_sized(buffer, buffer_size, vec2f(10.0, 10.0), font, green, 4.0f);
         }
 
         SDL_RenderPresent(renderer);
