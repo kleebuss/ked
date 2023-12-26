@@ -43,10 +43,8 @@ jobs:
     - name: Setup linux dependencies
       if: runner.os == 'Linux'
       run: |
-        sudo apt-get install software-properties-common
-        sudo add-apt-repository ppa:george-edison55/cmake-3.x
+        echo "CMAKE VERSION IS $(cmake --version)"
         sudo apt update
-        sudo apt upgrade
         sudo apt install -y cmake libsdl2-dev libsdl2-ttf-dev
     - uses: actions/checkout@v3
 
