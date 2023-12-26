@@ -5,6 +5,11 @@
 #include <SDL.h>
 #include <SDL_ttf.h>
 
+#include "la.h"
+
+#define FONT_WIDTH 12
+#define FONT_HEIGHT 20
+
 TTF_Font *font;
 int FONT_SIZE = 12;
 
@@ -12,6 +17,9 @@ SDL_Window *window;
 SDL_Renderer *renderer;
 
 SDL_Color white;
+
+char *fileData;
+
 // check SDL return code and panic if negative.
 void scc(int code)
 {
@@ -62,13 +70,42 @@ SDL_Texture *surface_to_texture(SDL_Surface *surface, int destroy_surface)
     return texture;
 }
 
-SDL_Texture *get_text_texture(char *text)
+SDL_Texture *get_text_texture(const char *text, SDL_Color color)
 {
     SDL_Surface *surface;
 
-    surface = scp(TTF_RenderUTF8_Blended(font, text, white));
+    surface = scp(TTF_RenderUTF8_Blended(font, text, color));
 
     return surface_to_texture(surface, 1);
+}
+
+void render_text(const char *text, Vec2f pos, SDL_Color color, float scale)
+{
+
+    SDL_Texture *text_texture = get_text_texture(text, color);
+
+    SDL_Rect rect;
+    rect.x = pos.x;
+    rect.y = pos.y;
+    rect.w = FONT_WIDTH * strlen(text) * scale;
+    rect.h = FONT_HEIGHT * scale;
+
+    scc(SDL_RenderCopy(renderer, text_texture, NULL, &rect));
+
+    SDL_DestroyTexture(text_texture);
+}
+
+void handle_keydown(SDL_Event event)
+{
+    if (event.key.repeat)
+    {
+        // don't handle repeats right now.
+        return;
+    }
+
+    // switch(event.key.keysym.sym) { 
+    //     case 
+    // }
 }
 
 int main()
@@ -81,6 +118,8 @@ int main()
     init_colors();
     init_fonts();
 
+    fileData = ""; 
+
     bool quit = false;
 
     while (!quit) {
@@ -90,21 +129,15 @@ int main()
                 case SDL_QUIT:
                     quit = true;
                     break;
+                case SDL_KEYDOWN:
+                    handle_keydown(event);
             }
         }
 
         scc(SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0));
         scc(SDL_RenderClear(renderer));
 
-        SDL_Texture *text_texture = get_text_texture("hello world!");
-
-        SDL_Rect rect;
-        rect.x = 0;
-        rect.y = 0;
-        rect.w = 100;
-        rect.h = 12;
-
-        scc(SDL_RenderCopy(renderer, text_texture, NULL, &rect));
+        render_text("hello, world!", vec2f(50.0, 50.0), white, 1.0);
 
         SDL_RenderPresent(renderer);
     }

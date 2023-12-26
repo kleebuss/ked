@@ -4,5 +4,5 @@ CFLAGS=-Wall -Wextra -std=c11 -pedantic -ggdb $(SDL) $(LIBS)
 CC=gcc
 LIBS=`pkg-config --libs SDL2_ttf` -lm
 
-ked: main.c
-	$(CC) $(CFLAGS) -o ked main.c
+ked: main.c la.c
+	$(CC) $(CFLAGS) -o ked main.c la.c
