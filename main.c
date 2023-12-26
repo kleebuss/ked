@@ -32,7 +32,7 @@ size_t buffer_cursor = 0;
 size_t buffer_size = 0;
 Vec2f buffer_pos;
 
-void erase_before_cursor(void) {
+void buffer_erase_before_cursor(void) {
     if (buffer_size == 0 || buffer_cursor <= 0) {
         return;
     }
@@ -45,7 +45,7 @@ void erase_before_cursor(void) {
     buffer_cursor -= 1;
 }
 
-void erase_after_cursor(void) {
+void buffer_erase_after_cursor(void) {
     if (buffer_size == 0 || buffer_cursor == buffer_size) {
         return;
     }
@@ -246,10 +246,10 @@ void handle_keydown(SDL_Event event)
 {
     switch(event.key.keysym.sym) {
         case SDLK_BACKSPACE:
-            erase_before_cursor();
+            buffer_erase_before_cursor();
         break;
         case SDLK_DELETE:
-            erase_after_cursor();
+            buffer_erase_after_cursor();
         break;
         case SDLK_LEFT:
             if (buffer_cursor > 0) {
@@ -276,7 +276,7 @@ int main2(void)
 {
     buffer_insert_text_before_cursor("Hello, world.");
     buffer_cursor = 6;
-    erase_before_cursor();
+    buffer_erase_before_cursor();
     return 0;
 }
 
