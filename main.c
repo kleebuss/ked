@@ -32,6 +32,18 @@ size_t buffer_cursor = 0;
 size_t buffer_size = 0;
 Vec2f buffer_pos;
 
+void erase_before_cursor(void) {
+    if (buffer_size == 0 || buffer_cursor <= 0) {
+        return;
+    }
+
+    char *dest_addr = buffer + buffer_cursor - 1;
+    size_t len_to_move = buffer_size - buffer_cursor;
+
+    memmove(dest_addr, buffer + buffer_cursor, len_to_move);
+    buffer_size -= 1;
+    buffer_cursor -= 1;
+}
 void buffer_insert_text_before_cursor(const char *text)
 {
     size_t text_size = strlen(text);
@@ -41,10 +53,12 @@ void buffer_insert_text_before_cursor(const char *text)
         text_size = free_space;
     }
 
+    // copy everything right of the cursor further to the right.
     char *dest_addr = buffer + text_size + buffer_cursor;
     
     memmove(dest_addr, buffer + buffer_cursor, buffer_size - buffer_cursor);
 
+    // copy the input string into place and update the cursor.
     memcpy(buffer + buffer_cursor, text, text_size);
     buffer_size += text_size;
     buffer_cursor += text_size;
@@ -219,10 +233,7 @@ void handle_keydown(SDL_Event event)
 {
     switch(event.key.keysym.sym) {
         case SDLK_BACKSPACE:
-            if (buffer_size > 0) {
-                buffer_size -= 1; 
-                buffer_cursor -= 1;
-            }
+            erase_before_cursor();
         break;
         case SDLK_LEFT:
             if (buffer_cursor > 0) {
@@ -230,7 +241,7 @@ void handle_keydown(SDL_Event event)
             }
         break;
         case SDLK_RIGHT:
-            if (buffer_cursor < BUFFER_CAPACITY) {
+            if (buffer_cursor < buffer_size) {
                 buffer_cursor += 1;
             }
         break;
@@ -248,8 +259,8 @@ void clear_screen(void)
 int main2(void)
 {
     buffer_insert_text_before_cursor("Hello, world.");
-    buffer_cursor = 7;
-    buffer_insert_text_before_cursor("stupid ");
+    buffer_cursor = 6;
+    erase_before_cursor();
     return 0;
 }
 
