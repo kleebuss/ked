@@ -4,6 +4,7 @@
 
 #include <SDL.h>
 #include <SDL_ttf.h>
+#include <string.h>
 
 #include "SDL_events.h"
 #include "SDL_keycode.h"
@@ -13,7 +14,7 @@
 
 #define FONT_WIDTH 12
 #define FONT_HEIGHT 20
-#define FONT_SIZE 12
+#define FONT_SIZE 14
 #define FONT_SCALE 2
 
 SDL_Window *window;
@@ -30,6 +31,24 @@ char buffer[BUFFER_CAPACITY];
 size_t buffer_cursor = 0;
 size_t buffer_size = 0;
 Vec2f buffer_pos;
+
+void buffer_insert_text_before_cursor(const char *text)
+{
+    size_t text_size = strlen(text);
+    const size_t free_space = BUFFER_CAPACITY - buffer_size;
+
+    if (text_size > free_space) {
+        text_size = free_space;
+    }
+
+    char *dest_addr = buffer + text_size + buffer_cursor;
+    
+    memmove(dest_addr, buffer + buffer_cursor, buffer_size - buffer_cursor);
+
+    memcpy(buffer + buffer_cursor, text, text_size);
+    buffer_size += text_size;
+    buffer_cursor += text_size;
+}
 
 // check SDL return code and panic if negative.
 void scc(int code)
@@ -193,16 +212,7 @@ void handle_textinput(SDL_Event event)
         return;
     }
 
-    size_t text_size = strlen(event.text.text);
-    const size_t free_space = BUFFER_CAPACITY - buffer_size;
-
-    if (text_size > free_space) {
-        text_size = free_space;
-    }
-
-    memcpy(buffer + buffer_size, event.text.text, text_size);
-    buffer_size += text_size;
-    buffer_cursor += text_size;
+    buffer_insert_text_before_cursor(event.text.text);
 }
 
 void handle_keydown(SDL_Event event)
@@ -233,6 +243,14 @@ void clear_screen(void)
 {
     scc(SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0));
     scc(SDL_RenderClear(renderer));
+}
+
+int main2(void)
+{
+    buffer_insert_text_before_cursor("Hello, world.");
+    buffer_cursor = 7;
+    buffer_insert_text_before_cursor("stupid ");
+    return 0;
 }
 
 int main(void)
