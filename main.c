@@ -7,11 +7,13 @@
 
 #include "SDL_events.h"
 #include "SDL_keycode.h"
+#include "SDL_scancode.h"
 #include "la.h"
 
 #define FONT_WIDTH 12
 #define FONT_HEIGHT 20
 #define FONT_SIZE 12
+#define FONT_SCALE 1
 
 SDL_Window *window;
 SDL_Renderer *renderer;
@@ -24,7 +26,9 @@ SDL_Color green;
 
 #define BUFFER_CAPACITY 1024
 char buffer[BUFFER_CAPACITY];
+size_t buffer_cursor = 0;
 size_t buffer_size = 0;
+Vec2f buffer_pos;
 
 // check SDL return code and panic if negative.
 void scc(int code)
@@ -131,10 +135,19 @@ void render_character(char c, Vec2f pos, TTF_Font *font, SDL_Texture *tex_buffer
 void render_text_sized(const char *text, size_t text_size, Vec2f pos, TTF_Font *font, SDL_Color color, float scale)
 {
     SDL_Texture *tex_buffer = {0};
+    Vec2f startpos = pos;
 
     for (size_t x = 0; x < text_size; x++)
     {
-        render_character(text[x], pos, font, tex_buffer, color, scale);
+        char c = text[x];
+
+        if (c == '\n')
+        {
+            pos.x = startpos.x;
+            pos.y += FONT_HEIGHT * scale;
+        }
+
+        render_character(c, pos, font, tex_buffer, color, scale);
         pos.x += FONT_WIDTH * scale;
     }
 
@@ -144,6 +157,19 @@ void render_text_sized(const char *text, size_t text_size, Vec2f pos, TTF_Font *
 void render_text(const char *text, Vec2f pos, TTF_Font *font, SDL_Color color, float scale)
 {
     render_text_sized(text, strlen(text), pos, font, color, scale);
+}
+
+void render_cursor(Vec2f pos, SDL_Color color)
+{
+    const SDL_Rect cursor_rect = {
+        .x = pos.x += (int) floorf(buffer_cursor * FONT_WIDTH * FONT_SCALE),
+        .y = pos.y,
+        .w = FONT_WIDTH * FONT_SCALE,
+        .h = FONT_HEIGHT * FONT_SCALE,
+    };
+    
+    scc(SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a));
+    scc(SDL_RenderFillRect(renderer, &cursor_rect));
 }
 
 void handle_textinput(SDL_Event event)
@@ -163,15 +189,27 @@ void handle_textinput(SDL_Event event)
 
     memcpy(buffer + buffer_size, event.text.text, text_size);
     buffer_size += text_size;
+    buffer_cursor += text_size;
 }
 
 void handle_keydown(SDL_Event event)
 {
-    switch(event.key.keysym.sym) {
-        case SDLK_BACKSPACE:
-        if (buffer_size > 0) {
-            buffer_size -= 1; 
-        }
+    switch(event.key.keysym.scancode) {
+        case SDL_SCANCODE_BACKSPACE:
+            if (buffer_size > 0) {
+                buffer_size -= 1; 
+                buffer_cursor -= 1;
+            }
+        break;
+        case SDL_SCANCODE_KP_ENTER:
+            if (buffer_size + 1 <= BUFFER_CAPACITY) {
+                buffer[buffer_size] = '\n';
+                buffer_size += 1;
+                buffer_cursor += 1;
+            }
+        break;
+        default:
+        break;
     }
 }
 
@@ -187,6 +225,11 @@ int main()
 
     window = scp(SDL_CreateWindow("ked", 0, 0, 800, 600, SDL_WINDOW_RESIZABLE));
     renderer = scp(SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED));
+
+    buffer_pos = (Vec2f) {
+        .x = 10,
+        .y = 10
+    };
 
     init_colors();
     TTF_Font *font = load_font("fonts/ProggyVector-Regular.ttf");
@@ -213,8 +256,10 @@ int main()
 
         if (buffer_size > 0)
         {
-            render_text_sized(buffer, buffer_size, vec2f(10.0, 10.0), font, green, 2.0f);
+            render_text_sized(buffer, buffer_size, buffer_pos, font, white, FONT_SCALE);
         }
+
+        render_cursor(buffer_pos, green);
 
         SDL_RenderPresent(renderer);
     }
