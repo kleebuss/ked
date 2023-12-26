@@ -44,6 +44,19 @@ void erase_before_cursor(void) {
     buffer_size -= 1;
     buffer_cursor -= 1;
 }
+
+void erase_after_cursor(void) {
+    if (buffer_size == 0 || buffer_cursor == buffer_size) {
+        return;
+    }
+
+    char *dest_addr = buffer + buffer_cursor;
+    size_t len_to_move = buffer_size - buffer_cursor - 1;
+
+    memmove(dest_addr, buffer + buffer_cursor + 1, len_to_move);
+    buffer_size -= 1;
+}
+
 void buffer_insert_text_before_cursor(const char *text)
 {
     size_t text_size = strlen(text);
@@ -234,6 +247,9 @@ void handle_keydown(SDL_Event event)
     switch(event.key.keysym.sym) {
         case SDLK_BACKSPACE:
             erase_before_cursor();
+        break;
+        case SDLK_DELETE:
+            erase_after_cursor();
         break;
         case SDLK_LEFT:
             if (buffer_cursor > 0) {
