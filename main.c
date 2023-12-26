@@ -5,18 +5,21 @@
 #include <SDL.h>
 #include <SDL_ttf.h>
 
+#include "SDL_keycode.h"
 #include "la.h"
 
 #define FONT_WIDTH 12
 #define FONT_HEIGHT 20
-
-TTF_Font *font;
-int FONT_SIZE = 12;
+#define FONT_SIZE 12
 
 SDL_Window *window;
 SDL_Renderer *renderer;
 
 SDL_Color white;
+SDL_Color black;
+SDL_Color blue;
+SDL_Color red;
+SDL_Color green;
 
 char *fileData;
 
@@ -44,16 +47,46 @@ void *scp(void *ptr)
 
 void init_colors(void)
 {
-    white.r = 255;
-    white.b = 255;
-    white.g = 255;
-    white.a = 0;
+    white = (SDL_Color) {
+        .r = 255,
+        .g = 255,
+        .b = 255,
+        .a = 0
+    };
+
+    black = (SDL_Color) {
+        .r = 0,
+        .g = 0,
+        .b = 0,
+        .a = 0
+    };
+
+    red = (SDL_Color) {
+        .r = 255,
+        .g = 0,
+        .b = 0,
+        .a = 0
+    };
+
+    green = (SDL_Color) {
+        .r = 0,
+        .g = 255,
+        .b = 0,
+        .a = 0
+    };
+
+    blue = (SDL_Color) {
+        .r = 0,
+        .g = 0,
+        .b = 255,
+        .a = 0
+    };
 }
 
-void init_fonts(void)
+TTF_Font *load_font(const char* path)
 {
    scc(TTF_Init());
-   font = scp(TTF_OpenFont("fonts/ProggyVector-Regular.ttf", FONT_SIZE));
+   return scp(TTF_OpenFont(path, FONT_SIZE));
 }
 
 SDL_Texture *surface_to_texture(SDL_Surface *surface, int destroy_surface)
@@ -70,7 +103,7 @@ SDL_Texture *surface_to_texture(SDL_Surface *surface, int destroy_surface)
     return texture;
 }
 
-SDL_Texture *get_text_texture(const char *text, SDL_Color color)
+SDL_Texture *get_text_texture(const char *text, TTF_Font *font, SDL_Color color)
 {
     SDL_Surface *surface;
 
@@ -79,10 +112,9 @@ SDL_Texture *get_text_texture(const char *text, SDL_Color color)
     return surface_to_texture(surface, 1);
 }
 
-void render_text(const char *text, Vec2f pos, SDL_Color color, float scale)
+void render_text(const char *text, Vec2f pos, TTF_Font *font, SDL_Color color, float scale)
 {
-
-    SDL_Texture *text_texture = get_text_texture(text, color);
+    SDL_Texture *text_texture = get_text_texture(text, font, color);
 
     SDL_Rect rect;
     rect.x = pos.x;
@@ -103,9 +135,7 @@ void handle_keydown(SDL_Event event)
         return;
     }
 
-    // switch(event.key.keysym.sym) { 
-    //     case 
-    // }
+
 }
 
 int main()
@@ -116,7 +146,7 @@ int main()
     renderer = scp(SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED));
 
     init_colors();
-    init_fonts();
+    TTF_Font *font = load_font("fonts/ProggyVector-Regular.ttf");
 
     fileData = ""; 
 
@@ -137,7 +167,10 @@ int main()
         scc(SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0));
         scc(SDL_RenderClear(renderer));
 
-        render_text("hello, world!", vec2f(50.0, 50.0), white, 1.0);
+        if (strlen(fileData) > 0)
+        {
+            render_text(fileData, vec2f(50.0, 50.0), font, green, 4.0f);
+        }
 
         SDL_RenderPresent(renderer);
     }
