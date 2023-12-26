@@ -7,13 +7,14 @@
 
 #include "SDL_events.h"
 #include "SDL_keycode.h"
-#include "SDL_scancode.h"
+
+#include "SDL_render.h"
 #include "la.h"
 
 #define FONT_WIDTH 12
 #define FONT_HEIGHT 20
 #define FONT_SIZE 12
-#define FONT_SCALE 1
+#define FONT_SCALE 2
 
 SDL_Window *window;
 SDL_Renderer *renderer;
@@ -159,17 +160,29 @@ void render_text(const char *text, Vec2f pos, TTF_Font *font, SDL_Color color, f
     render_text_sized(text, strlen(text), pos, font, color, scale);
 }
 
-void render_cursor(Vec2f pos, SDL_Color color)
+void render_cursor(Vec2f pos, SDL_Color cursor_color, SDL_Color font_color, TTF_Font *font)
 {
-    const SDL_Rect cursor_rect = {
+    Vec2f cursor_pos = {
         .x = pos.x += (int) floorf(buffer_cursor * FONT_WIDTH * FONT_SCALE),
         .y = pos.y,
+    };
+
+    const SDL_Rect cursor_rect = {
+        .x = cursor_pos.x,
+        .y = cursor_pos.y,
         .w = FONT_WIDTH * FONT_SCALE,
         .h = FONT_HEIGHT * FONT_SCALE,
     };
     
-    scc(SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a));
+    scc(SDL_SetRenderDrawColor(renderer, cursor_color.r, cursor_color.g, cursor_color.b, cursor_color.a));
     scc(SDL_RenderFillRect(renderer, &cursor_rect));
+
+    if (buffer_cursor < buffer_size)
+    {
+        char str[1];
+        str[0] = buffer[buffer_cursor];
+        render_text_sized(str, 1, cursor_pos, font, font_color, FONT_SCALE);
+    }
 }
 
 void handle_textinput(SDL_Event event)
@@ -194,17 +207,20 @@ void handle_textinput(SDL_Event event)
 
 void handle_keydown(SDL_Event event)
 {
-    switch(event.key.keysym.scancode) {
-        case SDL_SCANCODE_BACKSPACE:
+    switch(event.key.keysym.sym) {
+        case SDLK_BACKSPACE:
             if (buffer_size > 0) {
                 buffer_size -= 1; 
                 buffer_cursor -= 1;
             }
         break;
-        case SDL_SCANCODE_KP_ENTER:
-            if (buffer_size + 1 <= BUFFER_CAPACITY) {
-                buffer[buffer_size] = '\n';
-                buffer_size += 1;
+        case SDLK_LEFT:
+            if (buffer_cursor > 0) {
+                buffer_cursor -= 1;
+            }
+        break;
+        case SDLK_RIGHT:
+            if (buffer_cursor < BUFFER_CAPACITY) {
                 buffer_cursor += 1;
             }
         break;
@@ -219,7 +235,7 @@ void clear_screen(void)
     scc(SDL_RenderClear(renderer));
 }
 
-int main()
+int main(void)
 {
     scc(SDL_Init(SDL_INIT_VIDEO));
 
@@ -259,7 +275,7 @@ int main()
             render_text_sized(buffer, buffer_size, buffer_pos, font, white, FONT_SCALE);
         }
 
-        render_cursor(buffer_pos, green);
+        render_cursor(buffer_pos, white, black, font);
 
         SDL_RenderPresent(renderer);
     }
