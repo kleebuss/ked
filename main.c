@@ -106,28 +106,39 @@ SDL_Texture *surface_to_texture(SDL_Surface *surface, int destroy_surface)
     return texture;
 }
 
-SDL_Texture *get_text_texture(const char *text, TTF_Font *font, SDL_Color color)
+SDL_Texture *get_text_texture(char c, TTF_Font *font, SDL_Color color)
 {
     SDL_Surface *surface;
 
-    surface = scp(TTF_RenderUTF8_Blended(font, text, color));
+    surface = scp(TTF_RenderUTF8_Blended(font, &c, color));
 
     return surface_to_texture(surface, 1);
 }
 
-void render_text_sized(const char *text, size_t text_size, Vec2f pos, TTF_Font *font, SDL_Color color, float scale)
+void render_character(char c, Vec2f pos, TTF_Font *font, SDL_Texture *tex_buffer, SDL_Color color, float scale)
 {
-    SDL_Texture *text_texture = get_text_texture(text, font, color);
+    tex_buffer = get_text_texture(c, font, color);
 
     SDL_Rect rect;
     rect.x = pos.x;
     rect.y = pos.y;
-    rect.w = FONT_WIDTH * strlen(text) * scale;
+    rect.w = FONT_WIDTH * scale;
     rect.h = FONT_HEIGHT * scale;
 
-    scc(SDL_RenderCopy(renderer, text_texture, NULL, &rect));
+    scc(SDL_RenderCopy(renderer, tex_buffer, NULL, &rect));
+}
 
-    SDL_DestroyTexture(text_texture);
+void render_text_sized(const char *text, size_t text_size, Vec2f pos, TTF_Font *font, SDL_Color color, float scale)
+{
+    SDL_Texture *tex_buffer = {0};
+
+    for (size_t x = 0; x < text_size; x++)
+    {
+        render_character(text[x], pos, font, tex_buffer, color, scale);
+        pos.x += FONT_WIDTH * scale;
+    }
+
+    SDL_DestroyTexture(tex_buffer);
 }
 
 void render_text(const char *text, Vec2f pos, TTF_Font *font, SDL_Color color, float scale)
@@ -154,6 +165,22 @@ void handle_textinput(SDL_Event event)
     buffer_size += text_size;
 }
 
+void handle_keydown(SDL_Event event)
+{
+    switch(event.key.keysym.sym) {
+        case SDLK_BACKSPACE:
+        if (buffer_size > 0) {
+            buffer_size -= 1; 
+        }
+    }
+}
+
+void clear_screen(void)
+{
+    scc(SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0));
+    scc(SDL_RenderClear(renderer));
+}
+
 int main()
 {
     scc(SDL_Init(SDL_INIT_VIDEO));
@@ -173,17 +200,20 @@ int main()
                 case SDL_QUIT:
                     quit = true;
                     break;
-                case SDL_TEXTINPUT:
+                case SDL_TEXTINPUT: 
                     handle_textinput(event);
+                    break;
+                case SDL_KEYDOWN: 
+                    handle_keydown(event);
+                    break;
             }
         }
 
-        scc(SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0));
-        scc(SDL_RenderClear(renderer));
+        clear_screen();
 
-        if (strlen(buffer) > 0)
+        if (buffer_size > 0)
         {
-            render_text_sized(buffer, buffer_size, vec2f(10.0, 10.0), font, green, 4.0f);
+            render_text_sized(buffer, buffer_size, vec2f(10.0, 10.0), font, green, 2.0f);
         }
 
         SDL_RenderPresent(renderer);
