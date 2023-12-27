@@ -40,6 +40,7 @@ jobs:
         #     c_compiler: cl
 
     steps:
+    - uses: actions/checkout@v3
     - name: Setup linux dependencies
       if: runner.os == 'Linux'
       run: |
@@ -47,7 +48,6 @@ jobs:
         sudo apt update
         sudo apt install -y cmake libxext-dev
         /home/runner/ked/ked/setup.sh
-    - uses: actions/checkout@v3
     - name: Configure cmake
       run: cmake -B build
     - name: Build
