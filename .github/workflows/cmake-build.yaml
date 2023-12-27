@@ -45,7 +45,8 @@ jobs:
       run: |
         echo "CMAKE VERSION IS $(cmake --version)"
         sudo apt update
-        sudo apt install -y cmake libsdl2-dev libsdl2-ttf-dev libxext-dev
+        sudo apt install -y cmake libxext-dev
+        ./setup.sh
     - uses: actions/checkout@v3
     - name: Configure cmake
       run: cmake -B build

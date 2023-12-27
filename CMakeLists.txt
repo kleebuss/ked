@@ -9,8 +9,6 @@ set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/CMakeModules" ${CMAKE_MODULE_PATH})
 set(SDL2_DIR "vendor/SDL2")
 set(SDL2_TTF_DIR "vendor/SDL2_ttf")
 
-execute_process(COMMAND git submodule update --init --recursive)
-
 add_subdirectory(${SDL2_DIR})
 include_directories(${SDL2_DIR}/include)
 
