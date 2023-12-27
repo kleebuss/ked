@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <math.h>
 
 #include <SDL.h>
 #include <SDL_ttf.h>
@@ -209,7 +210,7 @@ void render_text(const char *text, Vec2f pos, TTF_Font *font, SDL_Color color, f
 void render_cursor(Vec2f pos, SDL_Color cursor_color, SDL_Color font_color, TTF_Font *font)
 {
     Vec2f cursor_pos = {
-        .x = pos.x += (int) floorf(buffer_cursor * FONT_WIDTH * FONT_SCALE),
+        .x = pos.x += floorf((float)buffer_cursor * FONT_WIDTH * FONT_SCALE),
         .y = pos.y,
     };
 
