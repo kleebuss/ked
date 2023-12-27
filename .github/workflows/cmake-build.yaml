@@ -44,10 +44,8 @@ jobs:
     - name: Setup linux dependencies
       if: runner.os == 'Linux'
       run: |
-        echo "CMAKE VERSION IS $(cmake --version)"
-        sudo apt update
         sudo apt install -y cmake libxext-dev
-        /home/runner/ked/ked/setup.sh
+        git submodule update --init --recursive
     - name: Configure cmake
       run: cmake -B build
     - name: Build
