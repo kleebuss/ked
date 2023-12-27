@@ -13,7 +13,7 @@
 #include "SDL_render.h"
 #include "la.h"
 
-#include "buffer.h"
+#include "editor.h"
 
 #define FONT_WIDTH 12
 #define FONT_HEIGHT 20
@@ -29,12 +29,7 @@ SDL_Color blue;
 SDL_Color red;
 SDL_Color green;
 
-Vec2f buffer_pos;
-Line line = {0};
-
-size_t cursor_row = 0;
-size_t cursor_col = 0;
-
+Editor editor;
 
 // check SDL return code and panic if negative.
 void scc(int code)
@@ -161,8 +156,8 @@ void render_text(const char *text, Vec2f pos, TTF_Font *font, SDL_Color color, f
 void render_cursor(Vec2f pos, SDL_Color cursor_color, SDL_Color font_color, TTF_Font *font)
 {
     Vec2f cursor_pos = {
-        .x = pos.x += floorf((float)cursor_col * FONT_WIDTH * FONT_SCALE),
-        .y = pos.y += floorf((float)cursor_row * FONT_HEIGHT * FONT_SCALE)
+        .x = pos.x += floorf((float)editor.cursor_col * FONT_WIDTH * FONT_SCALE),
+        .y = pos.y += floorf((float)editor.cursor_row * FONT_HEIGHT * FONT_SCALE)
     };
 
     const SDL_Rect cursor_rect = {
@@ -175,11 +170,16 @@ void render_cursor(Vec2f pos, SDL_Color cursor_color, SDL_Color font_color, TTF_
     scc(SDL_SetRenderDrawColor(renderer, cursor_color.r, cursor_color.g, cursor_color.b, cursor_color.a));
     scc(SDL_RenderFillRect(renderer, &cursor_rect));
 
-    if (cursor_col < line.size)
+    if (editor.size > 0)
     {
-        char str[1];
-        str[0] = line.chars[cursor_col];
-        render_text_sized(str, 1, cursor_pos, font, font_color, FONT_SCALE);
+        Line *line = &editor.lines[editor.cursor_row];
+
+        if (editor.cursor_col < line->size)
+        {
+            char str[1];
+            str[0] = line->chars[editor.cursor_col];
+            render_text_sized(str, 1, cursor_pos, font, font_color, FONT_SCALE);
+        }
     }
 }
 
@@ -191,29 +191,26 @@ void handle_textinput(SDL_Event event)
         return;
     }
 
-    line_insert_text_before(&line, event.text.text, cursor_col);
-
-    cursor_col++;
+    editor_insert_text_before_cursor(&editor, event.text.text);
 }
 
 void handle_keydown(SDL_Event event)
 {
     switch(event.key.keysym.sym) {
         case SDLK_BACKSPACE:
-            if (line_erase_before(&line, cursor_col) > 0)
-                cursor_col--;
+            editor_erase_before_cursor(&editor);
         break;
         case SDLK_DELETE:
-            line_erase_after(&line, cursor_col);
+            editor_erase_after_cursor(&editor);
         break;
         case SDLK_LEFT:
-            if (cursor_col > 0) {
-                cursor_col -= 1;
+            if (editor.cursor_col > 0) {
+                editor.cursor_col -= 1;
             }
         break;
         case SDLK_RIGHT:
-            if (cursor_col < line.size) {
-                cursor_col += 1;
+            if (editor.cursor_col < editor.lines[editor.cursor_row].size) {
+                editor.cursor_col += 1;
             }
         break;
         default:
@@ -227,6 +224,38 @@ void clear_screen(void)
     scc(SDL_RenderClear(renderer));
 }
 
+void print_lines(void)
+{
+    printf("-----%d lines---\n", (int)editor.size);
+    for (int x = 0; x < editor.size; x++)
+    {
+        printf("line %d: %s\n", x, editor.lines[x].chars);
+    }
+
+    printf("%d, %d\n", (int)editor.cursor_row, (int)editor.cursor_col);
+}
+
+int main2(void)
+{
+    editor = new_editor();
+   
+    print_lines();
+
+    editor_insert_text_before_cursor(&editor, "hello world");
+
+    print_lines();
+
+    editor_erase_before_cursor(&editor);
+
+    print_lines();
+
+    editor_erase_before_cursor(&editor);
+    
+    print_lines();
+
+    return 0;
+}
+
 int main(void)
 {
     scc(SDL_Init(SDL_INIT_VIDEO));
@@ -234,17 +263,12 @@ int main(void)
     window = scp(SDL_CreateWindow("ked", 0, 0, 800, 600, SDL_WINDOW_RESIZABLE));
     renderer = scp(SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED));
 
-    buffer_pos = (Vec2f) {
-        .x = 10,
-        .y = 10
-    };
-
     init_colors();
     TTF_Font *font = load_font("fonts/ProggyVector-Regular.ttf");
 
     bool quit = false;
 
-    line = new_line();
+    editor = new_editor();
 
     while (!quit) {
         SDL_Event event = {0};
@@ -264,12 +288,15 @@ int main(void)
 
         clear_screen();
 
-        if (line.size > 0)
+        if (editor.size > 0)
         {
-            render_text_sized(line.chars, line.size, buffer_pos, font, white, FONT_SCALE);
+            for (size_t x = 0; x < editor.size; x++)
+            {
+                render_text_sized(editor.lines[x].chars, editor.lines[x].size, editor.pos, font, white, FONT_SCALE);
+            }
         }
 
-        render_cursor(buffer_pos, white, black, font);
+        render_cursor(editor.pos, white, black, font);
 
         SDL_RenderPresent(renderer);
     }

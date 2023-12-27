@@ -21,5 +21,5 @@ include_directories(${SDL2_DIR}/include)
 add_subdirectory(${SDL2_TTF_DIR})
 include_directories(${SDL2_TTF_DIR}/include)
 
-add_executable(ked main.c la.c buffer.c)
+add_executable(ked main.c la.c editor.c)
 target_link_libraries(ked SDL2main SDL2 SDL2_ttf)
