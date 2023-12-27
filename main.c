@@ -15,9 +15,9 @@
 
 #include "editor.h"
 
-#define FONT_WIDTH 12
+#define FONT_WIDTH 15
 #define FONT_HEIGHT 20
-#define FONT_SIZE 14
+#define FONT_SIZE 20
 #define FONT_SCALE 2
 
 SDL_Window *window;
@@ -28,6 +28,7 @@ SDL_Color black;
 SDL_Color blue;
 SDL_Color red;
 SDL_Color green;
+SDL_Texture *char_buffer;
 
 Editor editor;
 
@@ -120,9 +121,9 @@ SDL_Texture *get_text_texture(char c, TTF_Font *font, SDL_Color color)
     return surface_to_texture(surface, 1);
 }
 
-void render_character(char c, Vec2f pos, TTF_Font *font, SDL_Texture *tex_buffer, SDL_Color color, float scale)
+void render_character(char c, Vec2f pos, TTF_Font *font, SDL_Color color, float scale)
 {
-    tex_buffer = get_text_texture(c, font, color);
+    char_buffer = get_text_texture(c, font, color);
 
     SDL_Rect rect;
     rect.x = pos.x;
@@ -130,22 +131,18 @@ void render_character(char c, Vec2f pos, TTF_Font *font, SDL_Texture *tex_buffer
     rect.w = FONT_WIDTH * scale;
     rect.h = FONT_HEIGHT * scale;
 
-    scc(SDL_RenderCopy(renderer, tex_buffer, NULL, &rect));
+    scc(SDL_RenderCopy(renderer, char_buffer, NULL, &rect));
 }
 
 void render_text_sized(const char *text, size_t text_size, Vec2f pos, TTF_Font *font, SDL_Color color, float scale)
 {
-    SDL_Texture *tex_buffer = {0};
-
     for (size_t x = 0; x < text_size; x++)
     {
         char c = text[x];
 
-        render_character(c, pos, font, tex_buffer, color, scale);
+        render_character(c, pos, font, color, scale);
         pos.x += FONT_WIDTH * scale;
     }
-
-    SDL_DestroyTexture(tex_buffer);
 }
 
 void render_text(const char *text, Vec2f pos, TTF_Font *font, SDL_Color color, float scale)
@@ -302,6 +299,7 @@ int main(void)
     }
 
 
+    SDL_DestroyTexture(char_buffer);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     TTF_Quit();
